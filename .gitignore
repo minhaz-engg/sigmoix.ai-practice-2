@@ -140,6 +140,12 @@ celerybeat.pid
 .venv
 env/
 venv/
+result/
+category_result/
+crawl_results/
+fit_markdown_results/
+tmp/
+
 ENV/
 env.bak/
 venv.bak/
