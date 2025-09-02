@@ -1,0 +1,11 @@
+{
+  "name": "Product Description",
+  "baseSelector": ".pdp-product-desc",
+  "fields": [
+    {
+      "name": "description",
+      "selector": "*",
+      "type": "text"
+    }
+  ]
+}
