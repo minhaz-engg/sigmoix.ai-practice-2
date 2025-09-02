@@ -54,6 +54,46 @@ BLOCK_COOLDOWN_RANGE = (35, 75) # if blocked, sleep this many seconds before nex
 
 
 # ----- Utilities -----
+def folder_name_from_url(url: str, max_len: int = 96) -> str:
+    """
+    Create a safe folder name from URL: <host> + path segments, lowercase, non-alnum -> underscore.
+    Examples:
+      https://www.daraz.com.bd/hoses-pipes/ -> www_daraz_com_bd_hoses_pipes
+      https://example.com/a/b?x=1 -> example_com_a_b
+    """
+    p = urlparse(url)
+    host = (p.netloc or "site").lower()
+    path = (p.path or "/")
+    segments = [host] + [seg for seg in path.split("/") if seg]
+    raw = "_".join(segments)
+    safe = re.sub(r"[^a-zA-Z0-9]+", "_", raw).strip("_").lower()
+    if not safe:
+        safe = "site"
+    if len(safe) > max_len:
+        safe = safe[:max_len].rstrip("_")
+    return safe
+
+
+def ensure_category_dir(link: str) -> Dict[str, Path]:
+    """
+    Make/return a set of per-category paths under RESULT_DIR.
+    """
+    folder = folder_name_from_url(link)
+    category_dir = RESULT_DIR / folder
+    category_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = {
+        "dir": category_dir,
+        "schema": category_dir / "schema.json",
+        "products": category_dir / "products.json",
+        "pages_index": category_dir / "pages_index.json",
+        # Per-page JSONs will be saved as category_dir / f"page_{n}.json"
+    }
+    return paths
+
+
+
+
 def atomic_write_json(path: Path, data) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -310,7 +350,14 @@ async def fetch_until_new(
 # ----- Main flow -----
 async def demo_css_structured_extraction_no_schema(link: str):
     print("\n=== CSS-Based Structured Extraction with Auto Page Range + Anti-Block ===")
-
+    # Prepare per-category paths
+    paths = ensure_category_dir(link)
+    category_dir = paths["dir"]
+    schema_path = paths["schema"]
+    products_path = paths["products"]
+    pages_index_path = paths["pages_index"]
+    
+    
     sample_html = """
     <div class="Bm3ON" data-qa-locator="product-item" data-tracking="product-card" data-sku-simple="424381164_BD-2071091963" data-item-id="" data-listno="37" data-utlogmap="{&quot;listno&quot;:37,&quot;pageIndex&quot;:1,&quot;pvid&quot;:&quot;fa3d5fb4c8afef0f723af80f05fbf47f&quot;,&quot;query&quot;:&quot;other+projector+accessories&quot;,&quot;style&quot;:&quot;wf&quot;,&quot;x_item_ids&quot;:&quot;424381164&quot;,&quot;x_object_id&quot;:&quot;424381164&quot;,&quot;x_object_type&quot;:&quot;item&quot;}" data-aplus-ae="x41_55a80716" data-spm-anchor-id="a2a0e.searchlist.list.i41.2a1629f5kghtJd" data-aplus-clk="x41_55a80716">
         <div class="Ms6aG">
@@ -372,16 +419,17 @@ async def demo_css_structured_extraction_no_schema(link: str):
         # proxy_rotation_strategy=proxy_rotation_strategy,
     )
 
-    # Load existing products (so we detect repeats across runs)
-    existing_products_list = load_json_if_exists(OUTPUT_FILE, default=[])
+    # Load existing products for THIS category folder
+    existing_products_list = load_json_if_exists(products_path, default=[])
     existing_products_list = existing_products_list if isinstance(existing_products_list, list) else []
     all_products_by_id: Dict[str, dict] = {pid: p for p in existing_products_list if (pid := get_product_id(p))}
     known_ids = set(all_products_by_id.keys())
-
-    pages_index = load_json_if_exists(PAGES_INDEX_FILE, default={})  # page -> list of ids
+    
+    
+    pages_index = load_json_if_exists(pages_index_path, default={})  # page -> list of ids
 
     browser_config = BrowserConfig(
-        headless=False,
+        headless=True,
         # enable_stealth=True,   # ✅ important
         # user_data_dir=str(RESULT_DIR / "user_data"),  # ⬅️ enable if your crawl4ai supports persistent sessions
         # viewport_width=1366, viewport_height=768,
@@ -423,7 +471,7 @@ async def demo_css_structured_extraction_no_schema(link: str):
             to_save_page = page_new_products if SAVE_ONLY_UNIQUE else products
 
             if to_save_page:
-                atomic_write_json(RESULT_DIR / f"page_{page_idx}.json", to_save_page)
+                atomic_write_json(category_dir / f"page_{page_idx}.json", to_save_page)
                 total_new_added += len(page_new_products)
                 print(f"✅ Page {page_idx}: saved {len(to_save_page)} items "
                       f"({len(page_new_products)} new).")
@@ -434,8 +482,8 @@ async def demo_css_structured_extraction_no_schema(link: str):
             await asyncio.sleep(random.uniform(*PAGE_PAUSE_RANGE))
 
     all_products_unique = list(all_products_by_id.values())
-    atomic_write_json(OUTPUT_FILE, all_products_unique)
-    atomic_write_json(PAGES_INDEX_FILE, pages_index)
+    atomic_write_json(products_path, all_products_unique)
+    atomic_write_json(pages_index_path, pages_index)
 
     print(f"✅ Finished. Pages crawled: {len(urls)}, total unique products now: {len(all_products_unique)}, "
           f"new added this run: {total_new_added}")
@@ -443,10 +491,9 @@ async def demo_css_structured_extraction_no_schema(link: str):
 
 async def main():
     print("=== Crawl4AI (auto pages + anti-block) ===")
-    link = "https://www.daraz.com.bd/hoses-pipes/"  # any category/search URL
+    link = "https://www.daraz.com.bd/printer-labeller/"  # any category/search URL
     await demo_css_structured_extraction_no_schema(link)
-    print("\n=== Demo Complete ===")
-    print(f"Check {OUTPUT_FILE} for extracted products.")
+    print("\n=== Operation Successful ===")
 
 
 if __name__ == "__main__":
