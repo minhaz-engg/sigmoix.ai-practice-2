@@ -430,7 +430,7 @@ async def demo_css_structured_extraction_no_schema(link: str):
 
     browser_config = BrowserConfig(
         headless=True,
-        # enable_stealth=True,   # ✅ important
+        # enable_stealth=True,   
         # user_data_dir=str(RESULT_DIR / "user_data"),  # ⬅️ enable if your crawl4ai supports persistent sessions
         # viewport_width=1366, viewport_height=768,
     )
