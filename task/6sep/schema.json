@@ -1,0 +1,72 @@
+{
+  "name": "Product Details",
+  "baseSelector": "div[class*='pdp-block__product-detail']",
+  "fields": [
+    {
+      "name": "product_title",
+      "selector": ".pdp-mod-product-badge-title",
+      "type": "text"
+    },
+    {
+      "name": "rating",
+      "selector": ".pdp-review-summary__link",
+      "type": "text"
+    },
+    {
+      "name": "brand_name",
+      "selector": ".pdp-product-brand__name + a",
+      "type": "text"
+    },
+    {
+      "name": "original_price",
+      "selector": ".pdp-price_type_deleted",
+      "type": "text"
+    },
+    {
+      "name": "discount_price",
+      "selector": ".pdp-price_type_normal",
+      "type": "text"
+    },
+    {
+      "name": "discount_percentage",
+      "selector": ".pdp-product-price__discount",
+      "type": "text"
+    },
+    {
+      "name": "color_options",
+      "type": "list",
+      "selector": ".sku-prop-content-",
+      "fields": [
+        {
+          "name": "color_name",
+          "selector": ".sku-name",
+          "type": "text"
+        },
+        {
+          "name": "color_image",
+          "selector": ".sku-variable-img img",
+          "type": "attribute",
+          "attribute": "src"
+        }
+      ]
+    },
+    {
+      "name": "size_options",
+      "type": "list",
+      "selector": ".sku-prop-content-",
+      "fields": [
+        {
+          "name": "size_value",
+          "selector": ".sku-variable-size",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "quantity",
+      "selector": ".next-number-picker-input input",
+      "type": "attribute",
+      "attribute": "value"
+    }
+  ]
+}

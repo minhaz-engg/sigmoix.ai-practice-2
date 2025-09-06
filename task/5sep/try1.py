@@ -20,14 +20,14 @@ async def simple_example_with_css_selector():
     print("\n--- Using CSS Selectors ---")
     browser_config = BrowserConfig(headless=True)
     crawler_config = CrawlerRunConfig(
-        cache_mode=CacheMode.BYPASS, css_selector=".pdp-product-detail"
+        cache_mode=CacheMode.BYPASS, css_selector=".pdp-block__main-information-detail"
     )
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
         result = await crawler.arun(
             url="https://www.daraz.com.bd/products/vivo-samsung-huawei-xiaomi-oppo-vivo-35mm-i234040073-s1176850650.html", config=crawler_config
         )
-        print(result)
+        print(result.extracted_content)
 
 
 async def extract_structured_data_using_llm(
@@ -52,9 +52,8 @@ async def extract_structured_data_using_llm(
         extraction_strategy=LLMExtractionStrategy(
             llm_config=LLMConfig(provider=provider,api_token=api_token),
             # schema=OpenAIModelFee.model_json_schema(),
-            extraction_type="schema",
-            instruction="""this is a product detail page. extract all the information about the product in json format.
-            make sure to include the following fields if available: product name, price, description, specifications""",
+            extraction_type="json",
+            instruction="""this is a product detail page. extract all the information about the product in json format.""",
             extra_args=extra_args,
         ),
     )
@@ -63,16 +62,17 @@ async def extract_structured_data_using_llm(
         result = await crawler.arun(
             url="https://www.daraz.com.bd/products/vivo-samsung-huawei-xiaomi-oppo-vivo-35mm-i234040073-s1176850650.html", config=crawler_config
         )
-        print(result.extracted_content)
+        print(type(result.extracted_content))
 
 
 # Main execution
 async def main():
    
     # await simple_example_with_css_selector()
-    await extract_structured_data_using_llm(
-        "gemini/gemini-2.0-flash-lite-preview-02-05", os.getenv("GEMINI_API_KEY")
-    )
+    await simple_example_with_css_selector()
+    # await extract_structured_data_using_llm(
+    #     "gemini/gemini-2.0-flash-lite-preview-02-05", os.getenv("GEMINI_API_KEY")
+    # )
 
     
 

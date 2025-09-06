@@ -86,7 +86,7 @@ async def demo_css_structured_extraction_no_schema(link: str):
             config=config
         )
 
-        print(results[0])
+        print(results[0].extracted_content)
 
 
 async def main():
